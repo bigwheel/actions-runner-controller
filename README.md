@@ -29,7 +29,8 @@ ToC:
     - [Webhook Driven Scaling](#webhook-driven-scaling)
     - [Autoscaling to/from 0](#autoscaling-tofrom-0)
     - [Scheduled Overrides](#scheduled-overrides)
-  - [Runner with DinD](#runner-with-dind)
+  - [Alternative Runners](#alternative-runners)
+    - [Runner with DinD](#runner-with-dind)
   - [Additional Tweaks](#additional-tweaks)
   - [Custom Volume mounts](#custom-volume-mounts)
   - [Runner Labels](#runner-labels)
@@ -69,6 +70,7 @@ The documentation is kept inline with master@HEAD, we do our best to highlight a
 [GitHub Actions](https://github.com/features/actions) is a very useful tool for automating development. GitHub Actions jobs are run in the cloud by default, but you may want to run your jobs in your environment. [Self-hosted runner](https://github.com/actions/runner) can be used for such use cases, but requires the provisioning and configuration of a virtual machine instance. Instead if you already have a Kubernetes cluster, it makes more sense to run the self-hosted runner on top of it.
 
 **actions-runner-controller** makes that possible. Just create a *Runner* resource on your Kubernetes, and it will run and operate the self-hosted runner for the specified repository. Combined with Kubernetes RBAC, you can also build simple Self-hosted runners as a Service.
+
 ## Installation
 
 By default, actions-runner-controller uses [cert-manager](https://cert-manager.io/docs/installation/kubernetes/) for certificate management of Admission Webhook. Make sure you have already installed cert-manager before you install. The installation instructions for the cert-manager can be found below.
@@ -269,12 +271,13 @@ Alternatively, you can install each controller stack into a unique namespace (re
 - The organization level
 - The enterprise level
 
-ARC runners can be deployed as 1 of 2 abstractions: 
+Runners can be deployed as 1 of 2 abstractions: 
 
 - A `RunnerDeployment`
 - A `RunnerSet`
 
-We go into details about the differences between the 2 abstractions later, initially lets look at how to deploy a basic `RunnerDeployment` at the 3 possible management hierarchies.
+We go into details about the differences between the 2 later, initially lets look at how to deploy a basic `RunnerDeployment` at the 3 possible management hierarchies.
+
 ### Repository Runners
 
 To launch a single self-hosted runner, you need to create a manifest file that includes a `RunnerDeployment` resource as follows. This example launches a self-hosted runner with name *example-runnerdeploy* for the *actions-runner-controller/actions-runner-controller* repository.
@@ -1077,9 +1080,13 @@ The earlier entry is prioritized higher than later entries. So you usually defin
 
 A common use case for this may be to have 1 override to scale to 0 during the week outside of core business hours and another override to scale to 0 during all hours of the weekend.
 
-### Runner with DinD
+### Alternative Runners
 
-When using the default runner, the runner pod starts up 2 containers: runner and DinD (Docker-in-Docker). This might create issues if there's `LimitRange` set to namespace.
+ARC offers a few altenrative runners you may find useful preferred 
+
+#### Runner with DinD
+
+When using the default runner, the runner pod starts up 2 containers: runner and DinD (Docker-in-Docker). ARC maintains an alternative all in one runner image with docker running in the same container as the runner. This may be prefered from a resource or complexity perspective or to be compliant with a `LimitRange` namespace configuration.
 
 ```yaml
 # dindrunnerdeployment.yaml
@@ -1096,8 +1103,6 @@ spec:
       repository: mumoshu/actions-runner-controller-ci
       env: []
 ```
-
-This also helps with resources, as you don't need to give resources separately to docker and runner.
 
 ### Additional Tweaks
 
